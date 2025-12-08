@@ -1,0 +1,51 @@
+services:
+  backend:
+    build: ./llm-backend
+    container_name: llm-backend
+    ports:
+      - "8000:8000"
+    environment:
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+      OLLAMA_URL: http://ollama:11434/api/generate
+    depends_on:
+      - minio
+      - ollama
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    container_name: llm-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+  ollama:
+    build: ./llm-ollama
+    container_name: llm-ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
+  ui:
+    build: ./llm-ui
+    container_name: llm-ui
+    ports:
+      - "8001:8001"
+    environment:
+      BACKEND_STREAM_URL: http://backend:8000/stream
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  minio_data:
+
