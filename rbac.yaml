@@ -1,0 +1,44 @@
+# ServiceAccount do deployment safra-web (SAFRA_OPS_INCLUSTER=true).
+# Permissões para remediação: ligue SAFRA_K8S_EXEC_ENABLED=true no ConfigMap.
+# Restrinja SAFRA_OPS_ALLOWED_NAMESPACES no ConfigMap (vazio = qualquer namespace).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: safra-ops
+  labels:
+    app.kubernetes.io/name: safra-ia-ops
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: safra-ops-exec
+  labels:
+    app.kubernetes.io/name: safra-ia-ops
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch"]
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: safra-ops-exec
+  labels:
+    app.kubernetes.io/name: safra-ia-ops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: safra-ops-exec
+subjects:
+  - kind: ServiceAccount
+    name: safra-ops
+    namespace: safra-ia-ops

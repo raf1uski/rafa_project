@@ -1,0 +1,21 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: safra-web
+  labels:
+    app.kubernetes.io/name: safra-ia-ops
+    app.kubernetes.io/component: web
+  annotations:
+    # Disparo n8n tshoot pode levar até SAFRA_N8N_TRIGGER_TIMEOUT (300s)
+    haproxy.router.openshift.io/timeout: 310s
+spec:
+  to:
+    kind: Service
+    name: safra-web
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

@@ -1,0 +1,16 @@
+# Dados da aplicação (insights_store.json, kubeconfigs do admin, auth_config.json).
+# Web e ingest-worker montam o mesmo volume. Se os pods ficarem em nós diferentes,
+# use accessModes ReadWriteMany e um StorageClass que suporte RWX (ex.: NFS/OCS).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: safra-insights-data
+  labels:
+    app.kubernetes.io/name: safra-ia-ops
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  # storageClassName: ocs-storagecluster-cephfs  # exemplo RWX no OCP

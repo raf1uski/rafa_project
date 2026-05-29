@@ -1,0 +1,23 @@
+# Redis só aceita tráfego dos pods da aplicação (web + ingest-worker).
+# Requer CNI com suporte a NetworkPolicy no cluster.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: safra-redis-ingress
+  labels:
+    app.kubernetes.io/name: safra-ia-ops
+    app.kubernetes.io/component: redis
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: safra-ia-ops
+      ports:
+        - protocol: TCP
+          port: 6379

@@ -1,0 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: safra-ia-ops
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secret.yaml
+  - pvc-redis.yaml
+  - pvc-data.yaml
+  - redis.yaml
+  - networkpolicy.yaml
+  - web.yaml
+  - ingest-worker.yaml
+  - route.yaml
+  - rbac.yaml
+
+# OAuthClient (login OpenShift) — aplicar à parte após ajustar redirectURIs:
+#   oc apply -f openshift/oauth-client.yaml -n safra-ia-ops
+#
+# Ajuste imagens no registry interno e aplique:
+#   oc apply -k openshift/
+images:
+  - name: safra-web
+    newName: image-registry.openshift-image-registry.svc:5000/safra-ia-ops/safra-web
+    newTag: latest
+  - name: safra-redis
+    newName: image-registry.openshift-image-registry.svc:5000/safra-ia-ops/safra-redis
+    newTag: 7-alpine
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: safra-ia-operations

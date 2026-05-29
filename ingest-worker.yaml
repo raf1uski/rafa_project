@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: safra-ingest-worker
+  labels:
+    app.kubernetes.io/name: safra-ia-ops
+    app.kubernetes.io/component: ingest-worker
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: ingest-worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: safra-ia-ops
+        app.kubernetes.io/component: ingest-worker
+    spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/component: web
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: ingest-worker
+          image: safra-web:latest
+          imagePullPolicy: Always
+          command: ["python", "-u", "app.py", "ingest-worker"]
+          envFrom:
+            - configMapRef:
+                name: safra-config
+            - secretRef:
+                name: safra-secret
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: safra-secret
+                  key: REDIS_PASSWORD
+            - name: SAFRA_REDIS_URL
+              value: redis://admin:$(REDIS_PASSWORD)@safra-redis:6379/0
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          livenessProbe:
+            exec:
+              command:
+                - python
+                - -c
+                - "import os; assert os.environ.get('SAFRA_REDIS_URL')"
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: safra-insights-data

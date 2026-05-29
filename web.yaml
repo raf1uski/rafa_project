@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: safra-web
+  labels:
+    app.kubernetes.io/name: safra-ia-ops
+    app.kubernetes.io/component: web
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: safra-ia-ops
+        app.kubernetes.io/component: web
+    spec:
+      # PVC insights é RWO: worker usa affinity para o mesmo nó (ingest-worker.yaml).
+      serviceAccountName: safra-ops
+      containers:
+        - name: web
+          image: safra-web:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: safra-config
+            - secretRef:
+                name: safra-secret
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: safra-secret
+                  key: REDIS_PASSWORD
+            - name: SAFRA_REDIS_URL
+              value: redis://admin:$(REDIS_PASSWORD)@safra-redis:6379/0
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: safra-insights-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: safra-web
+  labels:
+    app.kubernetes.io/name: safra-ia-ops
+    app.kubernetes.io/component: web
+spec:
+  selector:
+    app.kubernetes.io/component: web
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

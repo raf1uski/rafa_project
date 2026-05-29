@@ -1,0 +1,15 @@
+# OAuthClient para login na console (SAFRA_AUTH_MODE=openshift + SAFRA_OCP_ENABLED=true).
+# 1) oc get route safra-web -n safra-ia-ops -o jsonpath='{.spec.host}'
+# 2) redirectURIs = https://<host>/oauth/openshift/callback
+# 3) secret = safra-secret SAFRA_OCP_OAUTH_CLIENT_SECRET (mesmo valor aqui)
+apiVersion: oauth.openshift.io/v1
+kind: OAuthClient
+metadata:
+  name: safra-ia-ops
+  labels:
+    app.kubernetes.io/name: safra-ia-ops
+grantMethod: auto
+accessTokenMaxAgeSeconds: 86400
+redirectURIs:
+  - https://CHANGE-ME-safra-web-safra-ia-ops.apps.cluster.example.com/oauth/openshift/callback
+secret: CHANGE-ME-client-secret
